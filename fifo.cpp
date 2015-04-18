@@ -19,7 +19,7 @@ class simple_cbuf {
     public:
         enum { default_size = 5 };
         explicit simple_cbuf(size_t size = default_size){
-            T * pBuf = new T[size + 1];
+            pBuf = new T[size + 1];
             max_index = size;
             head = tail = 0;
         }
@@ -52,7 +52,8 @@ class simple_cbuf {
         }
 
     private:
-        int  head,  tail, max_index, * pBuf;
+        T * pBuf;
+        int  head,  tail, max_index; 
         bool wrapped() const { return  !(head >= tail); }
         int next(int index) const{
             if (index == max_index){
