@@ -8,12 +8,18 @@
 
 using namespace std;
 
+struct testStruct {
+    int a;
+    int b;
+    int c;
+};
+
 template<class T>
 class simple_cbuf {
     public:
         enum { default_size = 5 };
         explicit simple_cbuf(size_t size = default_size){
-            pBuf = new T[size + 1];
+            T * pBuf = new T[size + 1];
             max_index = size;
             head = tail = 0;
         }
@@ -40,11 +46,11 @@ class simple_cbuf {
                 tail = next(tail);
             }
         }
-        void push(int new_value){
+        void push(T new_value){
             pBuf[head] = new_value;
             head = next(head);
         }
-        
+
     private:
         int  head,  tail, max_index, * pBuf;
         bool wrapped() const { return  !(head >= tail); }
@@ -57,23 +63,16 @@ class simple_cbuf {
         }
 };
 
-#if 0
-void *reader( void *){
-
-    cout << "reader" << endl; 
-}
-void *writer( void *){
-
-    cout << "writer" << endl; 
-}
-#endif
-
 int main(){
 
+
+    testStruct myTestStruct = { 1, 2, 3 };
+
     cout << "main function" << endl; 
-    simple_cbuf<int> buffer(5);
-    buffer.push(1);
+    simple_cbuf<testStruct> buffer(5);
+    buffer.push(myTestStruct);
     cout << "buffer push(1) " << endl;
+#if 0
     buffer.push(2);
     cout << "buffer push(2) " << endl;
     buffer.push(3);
@@ -84,34 +83,6 @@ int main(){
     buffer.push(5);
     cout << "buffer push(5) " << endl;
     cout << "buffer full() " << buffer.full() << endl;
-
-#if 0
-    cout << "buffer empty() " << buffer.empty() << endl;
-    buffer.push(1);
-    cout << "buffer push(1) " << endl;
-    cout << "buffer empty() " << buffer.empty() << endl;
-    buffer.push(2);
-    cout << "buffer push(2) " << endl;
-    buffer.push(3);
-    cout << "buffer push(3) " << endl;
-    cout << "buffer top() " << buffer.top() << endl;
-    cout << "buffer size() " << buffer.size() << endl;
-    buffer.pop();
-    cout << "buffer pop() " << endl;
-    cout << "buffer top() " << buffer.top() << endl;
-    cout << "buffer push(4) " << endl;
-    buffer.push(4);
-    cout << "buffer top() " << buffer.top() << endl;
-    cout << "buffer pop() " << endl;
-    buffer.pop();
-    cout << "buffer top() " << buffer.top() << endl;
-    cout << "buffer pop() " << endl;
-    buffer.pop();
-    cout << "buffer top() " << buffer.top() << endl;
-    cout << "buffer empty() " << buffer.empty() << endl;
-    cout << "buffer pop() " << endl;
-    buffer.pop();
-    cout << "buffer empty() " << buffer.empty() << endl;
 #endif
 #if 0
     pthread_t writer_thread, reader_thread;
