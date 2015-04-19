@@ -28,27 +28,24 @@ class simple_cbuf {
             delete []pBuf;
         }
 
-        size_t size() const{
-            if (!wrapped()){
-                return head - tail;
-            }else{ // head has wrapped
-                return (max_index - head + 1) + tail;
-            }
-        }
-
-        bool empty() const{ return (tail == head); }
-        bool full() const{ return (tail == next(head)); }
-
-        int top() const{ return pBuf[tail]; }
-
         void pop(){
             if (!empty()){
                 tail = next(tail);
             }
         }
-        void push(T new_value){
+        bool pop_try(){
+            if (empty()){ return false; }
+            tail = next(tail);
+
+            return true;
+        }
+        bool push(T new_value){
+            if (full()){ return false; }
+
             pBuf[head] = new_value;
             head = next(head);
+            
+            return true;
         }
 
     private:
@@ -62,6 +59,19 @@ class simple_cbuf {
                 index += 1;
             }
         }
+        size_t size() const{
+            if (!wrapped()){
+                return head - tail;
+            }else{ // head has wrapped
+                return (max_index - head + 1) + tail;
+            }
+        }
+
+        bool empty() const{ return (tail == head); }
+        bool full() const{ return (tail == next(head)); }
+
+        int top() const{ return pBuf[tail]; }
+
 };
 
 int main(){
@@ -71,20 +81,17 @@ int main(){
 
     cout << "main function" << endl; 
     simple_cbuf<testStruct> buffer(5);
-    buffer.push(myTestStruct);
-    cout << "buffer push(1) " << endl;
-#if 0
-    buffer.push(2);
-    cout << "buffer push(2) " << endl;
-    buffer.push(3);
-    cout << "buffer push(3) " << endl;
-    buffer.push(4);
-    cout << "buffer push(4) " << endl;
-    cout << "buffer full() " << buffer.full() << endl;
-    buffer.push(5);
-    cout << "buffer push(5) " << endl;
-    cout << "buffer full() " << buffer.full() << endl;
-#endif
+    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
+    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
+    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
+    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
+    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
+    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
+    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
+    cout << "buffer pop_try() " << buffer.pop_try() << endl;
+    cout << "buffer pop_try() " << buffer.pop_try() << endl;
+    cout << "buffer pop_try() " << buffer.pop_try() << endl;
+    cout << "buffer pop_try() " << buffer.pop_try() << endl;
 #if 0
     pthread_t writer_thread, reader_thread;
 
