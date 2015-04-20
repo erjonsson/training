@@ -1,8 +1,6 @@
-//fifo for music group
+//fifo 
 
 #include <iostream>
-//#define BOOST_TEST_MODULE MyTest
-//#include <boost/test/unit_test.hpp>
 #include <pthread.h>
 
 using namespace std;
@@ -16,7 +14,6 @@ struct testStruct {
 template<class T>
 class simple_cbuf {
     public:
-        enum { default_size = 5 };
         explicit simple_cbuf(size_t size = default_size){
             pBuf = new T[size + 1];
             max_index = size;
@@ -27,29 +24,34 @@ class simple_cbuf {
             delete []pBuf;
         }
 
-        void pop(){
-            while (empty()){
-                tail = next(tail);
-            }
+        void pop(T &value){
+            pthread_mutex_lock(&mutex);
+            while (empty()){ pthread_cond_wait(&not_empty, &mutex); }
+            value = pBuf[tail];
+            tail = next(tail); 
+            pthread_mutex_unlock(&mutex);
+            
         }
-        bool pop_try(){
+        bool pop_try(T &value){
             if (empty()){ return false; }
+            pthread_mutex_lock(&mutex);
+            value = pBuf[tail];
             tail = next(tail);
-
+            pthread_mutex_unlock(&mutex);
             return true;
         }
         bool push(T new_value){
             if (full()){ return false; }
-
+            pthread_mutex_lock(&mutex);
             pBuf[head] = new_value;
             head = next(head);
-            
+            pthread_mutex_unlock(&mutex);
+            pthread_cond_signal(&not_empty); 
             return true;
         }
 
     private:
-        T * pBuf;
-        int  head,  tail, max_index; 
+        
         bool wrapped() const { return  !(head >= tail); }
         int next(int index) const{
             if (index == max_index){
@@ -68,32 +70,48 @@ class simple_cbuf {
 
         bool empty() const{ return (tail == head); }
         bool full() const{ return (tail == next(head)); }
-        int top() const{ return pBuf[tail]; }
-
 };
 
 void * reader(void * arg){
     cout << "entering reader thread" << endl;
     simple_cbuf<testStruct>* buf = reinterpret_cast<simple_cbuf<testStruct>*>(arg); 
-    for (int i=0; i < 10000; i++){
-        cout << "reader " ;        
+    testStruct outStruct;
+    for (int i=0; i < 1000; i++){
+        buf->pop(outStruct);
+        cout << "pop " << outStruct.a << endl;
     }
 }
 
 void * writer(void * arg){
     cout << "entering writer thread" << endl;
+    testStruct myTestStruct = { 1, 2, 3 };
     simple_cbuf<testStruct>* buf = reinterpret_cast<simple_cbuf<testStruct>*>(arg); 
-    for (int i=0; i < 10000; i++){
-        cout << "writer " ;        
+    for (int i=0; i < 1000000; i++){
+        myTestStruct.a++;
+        if (buf->push(myTestStruct)){
+            cout << "push " << myTestStruct.a << endl;
+        }
     }
 }
 
 int main(){
 
-    testStruct myTestStruct = { 1, 2, 3 };
-
     cout << "main function" << endl; 
-    simple_cbuf<testStruct>* buf = new simple_cbuf<testStruct>(5);
+    simple_cbuf<testStruct>* buf = new simple_cbuf<testStruct>(100);
+    pthread_t writer_thread, reader_thread;
+
+    void *status;
+
+    pthread_create(&writer_thread, NULL, &writer, reinterpret_cast<void*>(buf));
+    pthread_create(&reader_thread, NULL, &reader, reinterpret_cast<void*>(buf));
+
+    pthread_join(writer_thread, &status);
+    pthread_join(reader_thread, &status);
+
+    pthread_exit(NULL);
+
+    return 0;
+}
 #if 0
     cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
     cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
@@ -111,17 +129,3 @@ int main(){
     cout << "buffer pop_try() " << buffer.pop_try() << endl;
     cout << "buffer pop_try() " << buffer.pop_try() << endl;
 #endif
-    pthread_t writer_thread, reader_thread;
-
-    void *status;
-
-    pthread_create(&writer_thread, NULL, &writer, reinterpret_cast<void*>(buf));
-    pthread_create(&reader_thread, NULL, &reader, reinterpret_cast<void*>(buf));
-
-    pthread_join(writer_thread, &status);
-    pthread_join(reader_thread, &status);
-
-    pthread_exit(NULL);
-
-    return 0;
-}
