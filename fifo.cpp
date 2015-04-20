@@ -1,6 +1,5 @@
 //fifo for music group
 
-#include <queue>
 #include <iostream>
 //#define BOOST_TEST_MODULE MyTest
 //#include <boost/test/unit_test.hpp>
@@ -29,7 +28,7 @@ class simple_cbuf {
         }
 
         void pop(){
-            if (!empty()){
+            while (empty()){
                 tail = next(tail);
             }
         }
@@ -69,43 +68,60 @@ class simple_cbuf {
 
         bool empty() const{ return (tail == head); }
         bool full() const{ return (tail == next(head)); }
-
         int top() const{ return pBuf[tail]; }
 
 };
 
-int main(){
+void * reader(void * arg){
+    cout << "entering reader thread" << endl;
+    simple_cbuf<testStruct>* buf = reinterpret_cast<simple_cbuf<testStruct>*>(arg); 
+    for (int i=0; i < 10000; i++){
+        cout << "reader " ;        
+    }
+}
 
+void * writer(void * arg){
+    cout << "entering writer thread" << endl;
+    simple_cbuf<testStruct>* buf = reinterpret_cast<simple_cbuf<testStruct>*>(arg); 
+    for (int i=0; i < 10000; i++){
+        cout << "writer " ;        
+    }
+}
+
+int main(){
 
     testStruct myTestStruct = { 1, 2, 3 };
 
     cout << "main function" << endl; 
-    simple_cbuf<testStruct> buffer(5);
-    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
-    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
-    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
-    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
-    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
-    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
-    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
-    cout << "buffer pop_try() " << buffer.pop_try() << endl;
-    cout << "buffer pop_try() " << buffer.pop_try() << endl;
-    cout << "buffer pop_try() " << buffer.pop_try() << endl;
-    cout << "buffer pop_try() " << buffer.pop_try() << endl;
+    simple_cbuf<testStruct>* buf = new simple_cbuf<testStruct>(5);
 #if 0
+    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
+    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
+    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
+    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
+    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
+    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
+    cout << "buffer push(testStruct) " << buffer.push(myTestStruct) << endl;
+    cout << "buffer pop_try() " << buffer.pop_try() << endl;
+    cout << "buffer pop_try() " << buffer.pop_try() << endl;
+    cout << "buffer pop_try() " << buffer.pop_try() << endl;
+    cout << "buffer pop_try() " << buffer.pop_try() << endl;
+    cout << "buffer pop_try() " << buffer.pop_try() << endl;
+    cout << "buffer pop_try() " << buffer.pop_try() << endl;
+    cout << "buffer pop_try() " << buffer.pop_try() << endl;
+    cout << "buffer pop_try() " << buffer.pop_try() << endl;
+#endif
     pthread_t writer_thread, reader_thread;
 
     void *status;
 
-    pthread_create(&writer_thread, NULL, &writer, NULL);
-    pthread_create(&reader_thread, NULL, &reader, NULL);
+    pthread_create(&writer_thread, NULL, &writer, reinterpret_cast<void*>(buf));
+    pthread_create(&reader_thread, NULL, &reader, reinterpret_cast<void*>(buf));
 
     pthread_join(writer_thread, &status);
     pthread_join(reader_thread, &status);
 
     pthread_exit(NULL);
-#endif
-
 
     return 0;
 }
