@@ -1,4 +1,4 @@
-#include "fifo.hpp"
+#include "fifo_boost.hpp"
 #include <iostream>
 
 using namespace std;
@@ -11,7 +11,7 @@ struct testStruct {
 
 void * reader(void * arg){
     cout << "entering reader thread" << endl;
-    Fifo<testStruct>* buf = reinterpret_cast<Fifo<testStruct>*>(arg); 
+    Fifo_b<testStruct>* buf = reinterpret_cast<Fifo_b<testStruct>*>(arg); 
     testStruct outStruct;
     for (int i=0; i < 1000; i++){
         buf->pop(outStruct);
@@ -22,7 +22,7 @@ void * reader(void * arg){
 void * writer(void * arg){
     cout << "entering writer thread" << endl;
     testStruct myTestStruct = { 1, 2, 3 };
-    Fifo<testStruct>* buf = reinterpret_cast<Fifo<testStruct>*>(arg); 
+    Fifo_b<testStruct>* buf = reinterpret_cast<Fifo_b<testStruct>*>(arg); 
     for (int i=0; i < 5000; i++){
         myTestStruct.a++;
         if (buf->push(myTestStruct)){
@@ -34,7 +34,7 @@ void * writer(void * arg){
 int main(){
 
     cout << "main function" << endl; 
-    Fifo<testStruct>* buf = new Fifo<testStruct>(-10);
+    Fifo_b<testStruct>* buf = new Fifo_b<testStruct>(-10);
     pthread_t writer_thread, reader_thread;
 
     void *status;

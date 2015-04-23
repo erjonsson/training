@@ -1,8 +1,7 @@
 CC=g++
 CFLAGS=-I.
-DEPS = fifo.hpp
+DEPS = fifo_boost.hpp
 OBJ = main.o 
-LIBS=-lpthread
 
 %.o: %.cpp $(DEPS)
 		$(CC) -c -o $@ $< $(CFLAGS)
