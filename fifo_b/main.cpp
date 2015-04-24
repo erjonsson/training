@@ -4,49 +4,48 @@
 using namespace std;
 
 struct testStruct {
-    int a;
-    int b;
-    int c;
+  int a;
+  int b;
+  int c;
 };
 
 void * reader(void * arg){
-    cout << "entering reader thread" << endl;
-    Fifo_b<testStruct>* buf = reinterpret_cast<Fifo_b<testStruct>*>(arg); 
-    testStruct outStruct;
-    for (int i=0; i < 10; i++){
-        if(buf->pop_try(outStruct)){ 
-            cout << "pop " << outStruct.a << endl;
-        }
-    }
+  cout << "entering reader thread" << endl;
+  FifoThreadSafe<testStruct>* buf = reinterpret_cast<FifoThreadSafe<testStruct>*>(arg); 
+  testStruct outStruct;
+  for (int i=0; i < 100000; i++){
+    buf->pop(outStruct);
+    cout << "pop " << outStruct.a << endl;
+  }
 }
 
 void * writer(void * arg){
-    cout << "entering writer thread" << endl;
-    testStruct myTestStruct = { 1, 2, 3 };
-    Fifo_b<testStruct>* buf = reinterpret_cast<Fifo_b<testStruct>*>(arg); 
-    for (int i=0; i < 10; i++){
-        myTestStruct.a++;
-        if (buf->push(myTestStruct)){
-            cout << "push " << myTestStruct.a << endl;
-        }
+  cout << "entering writer thread" << endl;
+  testStruct myTestStruct = { 1, 2, 3 };
+  FifoThreadSafe<testStruct>* buf = reinterpret_cast<FifoThreadSafe<testStruct>*>(arg); 
+  for (int i=0; i < 10000; i++){
+    myTestStruct.a++;
+    if (buf->push(myTestStruct)){
+      cout << "push " << myTestStruct.a << endl;
     }
+  }
 }
 
 int main(){
 
-    cout << "main function" << endl; 
-    Fifo_b<testStruct>* buf = new Fifo_b<testStruct>(10);
-    pthread_t writer_thread, reader_thread;
+  cout << "main function" << endl; 
+  FifoThreadSafe<testStruct>* buf = new FifoThreadSafe<testStruct>{100};
 
-    void *status;
+  pthread_t writer_thread, reader_thread;
 
-    pthread_create(&writer_thread, NULL, &writer, reinterpret_cast<void*>(buf));
-    pthread_create(&reader_thread, NULL, &reader, reinterpret_cast<void*>(buf));
+  void *status;
 
-    pthread_join(writer_thread, &status);
-    pthread_join(reader_thread, &status);
+  pthread_create(&writer_thread, NULL, &writer, reinterpret_cast<void*>(buf));
+  pthread_create(&reader_thread, NULL, &reader, reinterpret_cast<void*>(buf));
 
-    pthread_exit(NULL);
+  pthread_join(writer_thread, &status);
+  pthread_join(reader_thread, &status);
 
-    return 0;
+  pthread_exit(NULL);
+  return 0;
 }

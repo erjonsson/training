@@ -1,59 +1,76 @@
-#ifndef FIFO_H
-#define FIFO_H
+//-----------------------------------------------------------------------------
+// fifo_threadsafe.h
+// A sized size thread safe FIFO template class.
+// 
+// Author: Erik Jonsson
+// ----------------------------------------------------------------------------
+#ifndef FIFO_TS_H
+#define FIFO_TS_H
 
 #include <mutex>
 #include <condition_variable>
 #include <boost/circular_buffer.hpp>
 
 template<class T>
-class Fifo_b {
+class FifoThreadSafe {
 
-    public:
-        Fifo_b(size_t size) {
-            pBuffer = new boost::circular_buffer<T>(size); 
-        }
+  public:
+    // Constructs a queue.
+    // @param size - Size of queue.
+    FifoThreadSafe (size_t size) {
+      pBuffer = new boost::circular_buffer<T> {size}; 
+    }
 
-        ~Fifo_b(){
-            delete[] pBuffer;
-        }
+    ~FifoThreadSafe(){
+      delete[] pBuffer;
+    }
 
-        void pop(T &value) {
-            std::unique_lock<std::mutex> guard(fifo_b_mutex);
-            while (pBuffer->empty()) {
-                buffer_not_empty.wait(guard);
-            }
-            value = pBuffer->front();
-            pBuffer->pop_front();
-        }
+    // Dequeues the first item in the queue.
+    // Waits for item to be available (a call to push)
+    // if queue is empty.
+    // @param item - First item in queue.
+    void pop(T &item) {
+      std::unique_lock<std::mutex> guard(fifo_ts_mutex);
+      while (pBuffer->empty()) {
+        buffer_not_empty.wait(guard);
+      }
+      item = pBuffer->front();
+      pBuffer->pop_front();
+    }
 
-        bool pop_try(T &value) {
-            std::lock_guard<std::mutex> guard(fifo_b_mutex);
-            if (pBuffer->empty()){
-                return false;
-            }
-            value = pBuffer->front();
-            pBuffer->pop_front();
-            
-            return true;
-        }
+    // Dequeues the first item in the queue.
+    // @param item - First item in queue.
+    // @return - true if queue is non empty.
+    bool pop_try(T &item) {
+      std::lock_guard<std::mutex> guard(fifo_ts_mutex);
+      if (pBuffer->empty()){
+        return false;
+      }
+      item = pBuffer->front();
+      pBuffer->pop_front();
 
-        bool push(const T& Data) {
-            std::lock_guard<std::mutex> guard(fifo_b_mutex);
-            if (pBuffer->full()){ 
-                return false;
-            }
-            pBuffer->push_back(Data);
-            buffer_not_empty.notify_one();
+      return true;
+    }
 
-            return true;
-        }
+    // Enqueues an item into the queue. 
+    // @param T - item to be inserted into queue. 
+    // @return - true if queue is non full.
+    bool push(const T& item) {
+      std::lock_guard<std::mutex> guard(fifo_ts_mutex);
+      if (pBuffer->full()){ 
+        return false;
+      }
+      pBuffer->push_back(item);
+      buffer_not_empty.notify_one();
 
-    private:
-        std::mutex fifo_b_mutex; 
-        std::condition_variable buffer_not_empty;
-        boost::circular_buffer<T>*  pBuffer;
-        //mutex and conditional variable
+      return true;
+    }
 
+  private:
+    std::mutex fifo_ts_mutex; 
+    std::condition_variable buffer_not_empty;
+    boost::circular_buffer<T>*  pBuffer;
 };
 
-#endif // FIFO_H
+#endif // FIFO_TS_H
+
