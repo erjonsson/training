@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // fifo_threadsafe.h
-// A sized size thread safe FIFO template class.
+// A fixed size thread safe FIFO template class.
 // 
 // Author: Erik Jonsson
 // ----------------------------------------------------------------------------
@@ -18,11 +18,11 @@ class FifoThreadSafe {
     // Constructs a queue.
     // @param size - Size of queue.
     FifoThreadSafe (size_t size) {
-      pBuffer = new boost::circular_buffer<T> {size}; 
+      queue = new boost::circular_buffer<T> {size}; 
     }
 
     ~FifoThreadSafe(){
-      delete[] pBuffer;
+      delete[] queue;
     }
 
     // Dequeues the first item in the queue.
@@ -31,11 +31,11 @@ class FifoThreadSafe {
     // @param item - First item in queue.
     void pop(T &item) {
       std::unique_lock<std::mutex> guard(fifo_ts_mutex);
-      while (pBuffer->empty()) {
+      while (queue->empty()) {
         buffer_not_empty.wait(guard);
       }
-      item = pBuffer->front();
-      pBuffer->pop_front();
+      item = queue->front();
+      queue->pop_front();
     }
 
     // Dequeues the first item in the queue.
@@ -43,11 +43,11 @@ class FifoThreadSafe {
     // @return - true if queue is non empty.
     bool pop_try(T &item) {
       std::lock_guard<std::mutex> guard(fifo_ts_mutex);
-      if (pBuffer->empty()){
+      if (queue->empty()){
         return false;
       }
-      item = pBuffer->front();
-      pBuffer->pop_front();
+      item = queue->front();
+      queue->pop_front();
 
       return true;
     }
@@ -57,10 +57,10 @@ class FifoThreadSafe {
     // @return - true if queue is non full.
     bool push(const T& item) {
       std::lock_guard<std::mutex> guard(fifo_ts_mutex);
-      if (pBuffer->full()){ 
+      if (queue->full()){ 
         return false;
       }
-      pBuffer->push_back(item);
+      queue->push_back(item);
       buffer_not_empty.notify_one();
 
       return true;
@@ -69,7 +69,7 @@ class FifoThreadSafe {
   private:
     std::mutex fifo_ts_mutex; 
     std::condition_variable buffer_not_empty;
-    boost::circular_buffer<T>*  pBuffer;
+    boost::circular_buffer<T>*  queue;
 };
 
 #endif // FIFO_TS_H
